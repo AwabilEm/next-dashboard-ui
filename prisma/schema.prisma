@@ -84,7 +84,7 @@ model Class {
   supervisorId String?  // 👈 Make this optional
   supervisor   Teacher? @relation(fields: [supervisorId], references: [id]) // 👈 Also optional
   lessons       Lesson[]
-  student       Student[]
+  students      Student[]
   gradeId       Int  
   grade         Grade          @relation(fields: [gradeId], references: [id])
   announcements Announcement[]

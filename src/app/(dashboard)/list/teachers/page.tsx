@@ -5,7 +5,8 @@ import TableSearch from "@/components/TableSearch";
 import { role, teachersData } from "@/lib/data";
 import { prisma } from "@/lib/prisma";
 import { ITEM_PER_PAGE } from "@/lib/settings";
-import { Class, Subject, Teacher } from "@prisma/client";
+import { Class, Prisma, Subject, Teacher } from "@prisma/client";
+import { count } from "console";
 import { headers } from "next/headers";
 import Image from "next/image";
 import Link from "next/link";
@@ -101,14 +102,44 @@ const TeacherListPage = async ({
 }) => {
 const  {page, ...queryParams} = searchParams;
 const p = page ? parseInt(page) : 1;
-  const data = await prisma.teacher.findMany({
+
+//URL PARAM CONDITION
+const query: Prisma.TeacherWhereInput = {}
+
+if(queryParams){
+  for(const [key,value] of Object.entries(queryParams)){
+    if(value !== undefined){
+    switch (key) {
+      case "classId":
+       query.lessons = {
+          some:{
+            classId:parseInt(value),
+          },
+        };
+        break;
+        case "search":
+          query.name = {contains:value, mode: "insensitive"}
+          break;
+          default:
+            break;
+        
+    }
+  }}
+}
+  const [data, count] = await prisma.$transaction([
+  prisma.teacher.findMany({
+    where: query,
     include: {
       subjects: true,
       classes: true,
     },
     take: ITEM_PER_PAGE,
     skip: ITEM_PER_PAGE * (p-1),
-  });
+   
+  }),
+ prisma.teacher.count({where:query}),
+]);
+  
   // console.log(data);
   return (
     <div className="bg-white p-4 rounded-md flex-1 m-4 mt-0">
@@ -137,7 +168,7 @@ const p = page ? parseInt(page) : 1;
       <Table columns={columns} renderRow={renderRow} data={data} />
 
       {/* PAGINATION */}
-      <Pagination />
+      <Pagination page={p} count={count}/>
     </div>
   );
 };
