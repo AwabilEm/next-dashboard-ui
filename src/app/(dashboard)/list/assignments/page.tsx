@@ -2,9 +2,10 @@ import FormModal from "@/components/FormModal";
 import Pagination from "@/components/Pagination";
 import Table from "@/components/Table";
 import TableSearch from "@/components/TableSearch"
-import { assignmentsData, examsData, lessonsData, role } from "@/lib/data";
 import { prisma } from "@/lib/prisma";
 import { ITEM_PER_PAGE } from "@/lib/settings";
+import { CurrentUserId, role } from "@/lib/utils";
+import { currentUser } from "@clerk/nextjs/server";
 import {  Assignment, Class, Prisma, Subject, Teacher } from "@prisma/client";
 import { headers } from "next/headers";
 import Image from 'next/image';
@@ -66,7 +67,7 @@ const renderRow=(item:AssignmentList)=>(
     <td>
       <div className="flex items-center gap-2">
         
-        {role ==="admin" &&(
+        {(role ==="admin" || "teacher") &&(
             <>
          
             <FormModal table="result" type="update" data={item}/>
@@ -89,30 +90,47 @@ const p = page ? parseInt(page) : 1;
 
 //URL PARAM CONDITION
 const query: Prisma.AssignmentWhereInput = {}
-
+query.lesson ={}
 if(queryParams){
   for(const [key,value] of Object.entries(queryParams)){
     if(value !== undefined){
     switch (key) {
       
         case "classId":
-          query.lesson= {classId: parseInt(value)}
+          query.lesson.classId=  parseInt(value)
           break;
         case "teacherId":
-          query.lesson ={teacherId: value
-          };
+          query.lesson.teacherId =  value;
+          
         break;
         case "search":
-          query.lesson= {
-            subject :{
+          query.lesson.subject = {
+             
               name:{contains:value, mode: "insensitive"}
-            }
+            
           }
         break;
         default:
           break;
     }
   }}
+}
+
+
+//ROLE CONDITIONS
+
+switch (role) {
+  case "admin":
+    
+    break;
+    case "teacher":
+      query.lesson.teacherId = CurrentUserId!;
+      break;
+
+
+
+  default:
+    break;
 }
 const [data, count] = await prisma.$transaction([
   prisma.assignment.findMany({
