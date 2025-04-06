@@ -47,10 +47,14 @@ const columns =[
 
  
  
-  {
-    header: "Actions", 
-    accessor:"actions",
-  },
+...(role === "admin" || role === "teacher" ?
+  [
+    {
+      header: "Actions", 
+      accessor:"actions",
+    },
+  ]
+  : []),
   
 ];
 
@@ -121,10 +125,27 @@ if(queryParams){
 
 switch (role) {
   case "admin":
-    
     break;
     case "teacher":
       query.lesson.teacherId = CurrentUserId!;
+      break;
+    case "student":
+      query.lesson.class={
+        students:{
+          some:{
+            id:CurrentUserId!
+          },
+        },
+      };
+      break;
+    case "parent":
+      query.lesson.class = {
+        students:{
+          some:{
+            parentId:CurrentUserId!
+          },
+        },
+      };
       break;
 
 
